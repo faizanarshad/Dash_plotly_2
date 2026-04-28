@@ -1,0 +1,124 @@
+CIS 9655 Data Visualization
+Group 6 — Phase II Dashboard Plan
+Social Safety Nets & Subjective Wellbeing
+Team Members
+Daniel Hennessy
+Juan Camilo Martinez
+Afiya Afnin Anika
+Ryan Ram
+Guiding Question
+Do countries with stronger social safety nets report higher subjective wellbeing?
+
+Submission: Phase II Draft Dashboard
+Course: CIS 9655 — Spring 2026
+
+
+Overview & Dataset Selection
+Our guiding question asks whether stronger social safety nets correlate with higher reported wellbeing. To answer it, we merge four datasets that together provide the independent variable (social spending), the outcome variable (happiness/wellbeing), and key controls (GDP, inequality).
+
+Recommended Datasets
+The four datasets below were selected from the Phase I inventory because they share a common country/year key, are publicly accessible, and directly address the hypothesis. Not all datasets from the proposal are needed for Phase II — the goal is a clean, interpretable dashboard rather than exhaustive coverage.
+
+#
+Dataset
+Key Variables Used
+URL
+12
+World Happiness Report
+happiness_score, country, year
+worldhappiness.report/data
+1
+OECD Social Protection & Welfare
+social_spending_pct_gdp, country, year
+stats.oecd.org — SOCX_AGG
+6
+World Bank WDI
+gdp_per_capita_ppp, gini_index, unemployment_rate
+databank.worldbank.org
+15
+OECD Better Life Index
+housing_score, job_security_score, health, civic_engagement, safety, work_life_balance
+stats.oecd.org — BLI
+
+
+Dashboard Structure
+The dashboard requires 4 visualizations: at least one geospatial map, one time-series chart, and one scatterplot. Our fourth visualization uses a grouped bar chart to compare wellbeing dimensions. All four connect directly to the guiding hypothesis.
+
+Visualization 1 — Geospatial Map
+VIZ 1 · GEOSPATIAL MAP  Happiness Score by Country (2022)
+Chart Type
+Choropleth world map — countries colored by happiness score quartile
+Axes / Encoding
+Color fill: happiness score (4 tiers: <4.0 lightest, 7.0+ darkest blue). Hover tooltip: country name + exact score.
+Data Sources
+World Happiness Report (Dataset #12) — https://worldhappiness.report/data — happiness_score, country, year
+Written Description
+Early Finding: Nordic countries (Finland, Denmark, Iceland) cluster at the top while Sub-Saharan African and South Asian countries score lowest, providing strong geographic context for the hypothesis.
+Surprise: Costa Rica outperforms several wealthier OECD nations despite modest social spending, suggesting cultural and community factors play a role beyond government expenditure alone.
+Data Note: Approximately 18 small nations are missing from the WHR dataset and will appear gray on the map. This is a known gap in the source data and will be noted in the dashboard.
+
+Visualization 2 — Time Series
+VIZ 2 · TIME SERIES  Happiness Score Trends by Spending Tier (2015–2023)
+Chart Type
+Multi-line chart — one line per social spending tier (high / medium / low)
+Axes / Encoding
+X-axis: year (2015–2023). Y-axis: average happiness score (3.5–8.0). Line style distinguishes tiers (solid / dashed / dotted). Dash pattern used alongside color so chart reads in grayscale.
+Data Sources
+World Happiness Report (Dataset #12) — https://worldhappiness.report/data — happiness_score
+OECD Social Protection & Welfare (Dataset #1) — https://stats.oecd.org — SOCX_AGG — social_spending_pct_gdp (tier classification)
+World Bank WDI (Dataset #6) — https://databank.worldbank.org — proxy spending data for non-OECD countries
+Written Description
+Early Finding: High-spending nations maintained happiness scores roughly 1.5–2 points above low-spending countries across all years, with the gap widening during 2020–2022, suggesting social protection acts as a shock absorber during crises.
+Surprise: The COVID-era dip (2020–2021) was sharper and slower to recover in low-spending countries, which was not anticipated at the outset and strengthens the hypothesis considerably.
+Data Note: OECD social spending data covers only ~38 countries. Non-OECD nations were classified using World Bank WDI government expenditure figures as a proxy, which uses a slightly different methodology and may introduce noise in the medium-spending tier.
+
+Visualization 3 — Scatterplot
+VIZ 3 · SCATTERPLOT  Social Spending (% GDP) vs. Happiness Score
+Chart Type
+Scatterplot with trend line — each point is one country, colored by region
+Axes / Encoding
+X-axis: social_spending_pct_gdp (0–35%). Y-axis: happiness_score (3.0–8.5). Point color encodes region (Nordic, W. Europe, Americas, Asia-Pacific, Other). Hover tooltip shows country name, spending %, and happiness score. OLS trend line added.
+Data Sources
+OECD Social Protection & Welfare (Dataset #1) — https://stats.oecd.org — SOCX_AGG — social_spending_pct_gdp (x-axis)
+World Happiness Report (Dataset #12) — https://worldhappiness.report/data — happiness_score (y-axis)
+World Bank WDI (Dataset #6) — https://databank.worldbank.org — gdp_per_capita_ppp (point sizing or annotation)
+Written Description
+Early Finding: There is a moderate positive correlation (r ≈ 0.62) between social spending and happiness among OECD countries, lending support to the hypothesis while making clear the relationship is not deterministic.
+Surprise: The US spends at a moderate level (~18.7% GDP) but ranks 23rd in happiness, sitting clearly below the trend line. Costa Rica and Czechia both sit above it, suggesting spending composition (health vs. pensions vs. family support) may matter as much as total spending.
+Data Note: The scatterplot is most meaningful for OECD countries where spending data is consistent. Including non-OECD outliers (very low spending, very low happiness) risks overstating the correlation, so we will annotate these points clearly.
+
+Visualization 4 — Grouped Bar Chart
+VIZ 4 · GROUPED BAR CHART  Wellbeing Dimensions: High vs. Low Spending Countries
+Chart Type
+Horizontal grouped bar chart — two bars per dimension (high spending vs. low spending)
+Axes / Encoding
+Y-axis: six wellbeing dimensions (Housing, Jobs, Health, Civic Engagement, Safety, Work-Life Balance). X-axis: OECD Better Life Index score (0–10). Two bar groups per dimension: solid fill for high spending, outlined/hatched for low spending. Horizontal orientation ensures all dimension labels are fully readable.
+Data Sources
+OECD Better Life Index (Dataset #15) — https://stats.oecd.org — BLI — housing_score, job_security_score, work_life_balance_score, civic_engagement_score, safety_score
+OECD Social Protection & Welfare (Dataset #1) — https://stats.oecd.org — SOCX_AGG — used to classify countries into high vs. low spending groups
+Written Description
+Early Finding: High-spending countries lead on health and housing by a significant margin, but the gap narrows considerably for civic engagement and near-disappears for work-life balance, suggesting safety nets do not uniformly improve all life dimensions.
+Surprise: Work-life balance scores are nearly equivalent across spending tiers, which contradicts the common assumption that generous welfare states always outperform. This is the most analytically interesting finding in this visualization and warrants deeper exploration in Phase III.
+Data Note: The OECD BLI covers only ~40 nations, and the low-spending group is under-represented because most low-spending countries are not OECD members. This limits generalizability and will be flagged explicitly in the dashboard narrative.
+
+
+Data Architecture & Merge Strategy
+All four datasets share a country/year key, enabling a straightforward left join. The recommended merge order is:
+
+	•	Start with World Happiness Report as the base table (country, year, happiness_score)
+	•	Left join OECD Social Protection on country + year to add social_spending_pct_gdp
+	•	Left join World Bank WDI on country_code + year for GDP, Gini, and unemployment controls
+	•	Left join OECD Better Life Index on country + year for dimension scores (Viz 4 only)
+
+Country name standardization will be required — OECD uses full English names while World Bank uses ISO 3-letter codes. A lookup table mapping both to a consistent key should be built during data cleaning.
+
+
+Phase III: Interactivity Plan
+Per the assignment brief, brushing and linking between visualizations is not required for Phase II but should be designed with it in mind. The planned interactive connections for Phase III are:
+
+	•	Clicking a country on the choropleth (Viz 1) filters the scatterplot (Viz 3) to highlight that country and updates the time series (Viz 2) to show that country’s trend line.
+	•	A year slider on the time series (Viz 2) updates the choropleth (Viz 1) to show the selected year’s happiness scores.
+	•	A spending tier dropdown filters all four visualizations simultaneously.
+	•	Hovering a bar in Viz 4 highlights the corresponding countries in the scatterplot.
+
+Note on placeholder data: The values shown in the dashboard mockup are illustrative estimates used to demonstrate visual design. All figures must be replaced with real values pulled and cleaned from the source datasets before the Phase II submission.
