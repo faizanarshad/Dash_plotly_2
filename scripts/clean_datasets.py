@@ -140,6 +140,14 @@ def make_analysis_ready(df: pd.DataFrame) -> pd.DataFrame:
     return df.dropna(subset=core).copy()
 
 
+def round_numeric_columns(df: pd.DataFrame, decimals: int = 1) -> pd.DataFrame:
+    out = df.copy()
+    numeric_cols = out.select_dtypes(include=["number"]).columns.tolist()
+    for col in numeric_cols:
+        out[col] = out[col].round(decimals)
+    return out
+
+
 def main() -> None:
     CLEAN_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -157,13 +165,25 @@ def main() -> None:
     wdi.to_csv(CLEAN_DIR / "phase2_inputs" / "world_bank_wdi_controls_2015_2023_clean.csv", index=False)
     bli.to_csv(CLEAN_DIR / "phase2_inputs" / "oecd_bli_dimensions_country_level_clean.csv", index=False)
 
-    clean_combined.to_csv(CLEAN_DIR / "combined_wellbeing_policy_2015_2023_clean.csv", index=False)
-    analysis_ready.to_csv(CLEAN_DIR / "combined_wellbeing_policy_2015_2023_analysis_ready.csv", index=False)
+    # Enforce one digit after decimal for numeric fields in exported cleaned datasets.
+    whr_out = round_numeric_columns(whr, decimals=1)
+    socx_out = round_numeric_columns(socx, decimals=1)
+    wdi_out = round_numeric_columns(wdi, decimals=1)
+    bli_out = round_numeric_columns(bli, decimals=1)
+    clean_combined_out = round_numeric_columns(clean_combined, decimals=1)
+    analysis_ready_out = round_numeric_columns(analysis_ready, decimals=1)
 
+    whr_out.to_csv(CLEAN_DIR / "phase2_inputs" / "whr_happiness_2015_2023_clean.csv", index=False)
+    socx_out.to_csv(CLEAN_DIR / "phase2_inputs" / "oecd_socx_social_spending_2015_2023_clean.csv", index=False)
+    wdi_out.to_csv(CLEAN_DIR / "phase2_inputs" / "world_bank_wdi_controls_2015_2023_clean.csv", index=False)
+    bli_out.to_csv(CLEAN_DIR / "phase2_inputs" / "oecd_bli_dimensions_country_level_clean.csv", index=False)
+
+    clean_combined_out.to_csv(CLEAN_DIR / "combined_wellbeing_policy_2015_2023_clean.csv", index=False)
+    analysis_ready_out.to_csv(CLEAN_DIR / "combined_wellbeing_policy_2015_2023_analysis_ready.csv", index=False)
     print("Saved cleaned files in:", CLEAN_DIR)
-    print("combined_clean shape:", clean_combined.shape)
-    print("analysis_ready shape:", analysis_ready.shape)
-    print("duplicate country-year in clean combined:", clean_combined.duplicated(["country_iso3", "year"]).sum())
+    print("combined_clean shape:", clean_combined_out.shape)
+    print("analysis_ready shape:", analysis_ready_out.shape)
+    print("duplicate country-year in clean combined:", clean_combined_out.duplicated(["country_iso3", "year"]).sum())
     print("missing in core columns:")
     for col in [
         "happiness_score",
@@ -172,7 +192,7 @@ def main() -> None:
         "gini_index",
         "unemployment_rate_pct",
     ]:
-        print(f"  {col}: {int(clean_combined[col].isna().sum())}")
+        print(f"  {col}: {int(clean_combined_out[col].isna().sum())}")
 
 
 if __name__ == "__main__":

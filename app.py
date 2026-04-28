@@ -61,7 +61,7 @@ def choropleth(df: pd.DataFrame, year: int) -> go.Figure:
             "Q3": "#3182bd",
             "Q4: Highest": "#08519c",
         },
-        hover_data={"happiness_score": ":.2f", "happiness_quartile": True},
+        hover_data={"happiness_score": ":.1f", "happiness_quartile": True},
         title=f"VIZ 1 · GEOSPATIAL MAP — Happiness Score by Country ({year})",
     )
     fig.update_layout(margin=dict(l=10, r=10, t=50, b=10), height=460)
@@ -86,7 +86,7 @@ def timeseries(df: pd.DataFrame) -> go.Figure:
         labels={"happiness_score": "Average Happiness Score", "spending_tier": "Social Spending Tier"},
     )
     fig.update_xaxes(title="Year")
-    fig.update_yaxes(title="Average Happiness Score")
+    fig.update_yaxes(title="Average Happiness Score", tickformat=".1f")
     fig.update_layout(margin=dict(l=10, r=10, t=50, b=10), height=420)
     return fig
 
@@ -109,6 +109,11 @@ def scatter(df: pd.DataFrame) -> go.Figure:
         color="region",
         size="gdp",
         hover_name="country_name",
+        hover_data={
+            "social_spending_pct_gdp": ":.1f",
+            "happiness_score": ":.1f",
+            "gdp": ":.1f",
+        },
         title="VIZ 3 · SCATTERPLOT — Social Spending (% GDP) vs. Happiness Score",
         labels={
             "social_spending_pct_gdp": "Social Spending (% GDP)",
@@ -125,6 +130,8 @@ def scatter(df: pd.DataFrame) -> go.Figure:
         fig.add_trace(
             go.Scatter(x=x_line, y=y_line, mode="lines", name="Trend line", line=dict(color="black", dash="dash"))
         )
+    fig.update_xaxes(tickformat=".1f")
+    fig.update_yaxes(tickformat=".1f")
     fig.update_layout(margin=dict(l=10, r=10, t=50, b=10), height=420)
     return fig
 
@@ -168,7 +175,7 @@ def grouped_bars(df: pd.DataFrame) -> go.Figure:
         title="VIZ 4 · GROUPED BAR CHART — Wellbeing Dimensions: High vs. Low Spending Countries",
         labels={"score": "OECD Better Life Index Score", "spending_tier": "Spending Tier", "dimension": "Dimension"},
     )
-    fig.update_xaxes(title="OECD Better Life Index Score (0-10)")
+    fig.update_xaxes(title="OECD Better Life Index Score (0-10)", tickformat=".1f")
     fig.update_yaxes(title="Wellbeing Dimension")
     fig.update_layout(margin=dict(l=10, r=10, t=50, b=10), height=420)
     return fig

@@ -61,7 +61,7 @@ def viz1_choropleth_2022(df: pd.DataFrame) -> go.Figure:
             "Q3": "#3182bd",
             "Q4: Highest": "#08519c",
         },
-        hover_data={"happiness_score": ":.2f", "happiness_quartile": True},
+        hover_data={"happiness_score": ":.1f", "happiness_quartile": True},
         title="VIZ 1 · GEOSPATIAL MAP — Happiness Score by Country (2022)",
     )
     fig.update_layout(margin=dict(l=20, r=20, t=60, b=20))
@@ -92,7 +92,7 @@ def viz2_time_series_by_tier(df: pd.DataFrame) -> go.Figure:
         labels={"happiness_score": "Average Happiness Score", "spending_tier": "Social Spending Tier"},
     )
     fig.update_xaxes(title="Year")
-    fig.update_yaxes(title="Average Happiness Score")
+    fig.update_yaxes(title="Average Happiness Score", tickformat=".1f")
     fig.update_layout(margin=dict(l=20, r=20, t=60, b=20))
     return fig
 
@@ -119,6 +119,11 @@ def viz3_scatter_spending_vs_happiness(df: pd.DataFrame) -> go.Figure:
         color="region",
         hover_name="country_name",
         size="gdp_per_capita_ppp_constant_2021_intl_dollars",
+        hover_data={
+            "social_spending_pct_gdp": ":.1f",
+            "happiness_score": ":.1f",
+            "gdp_per_capita_ppp_constant_2021_intl_dollars": ":.1f",
+        },
         title="VIZ 3 · SCATTERPLOT — Social Spending (% GDP) vs. Happiness Score",
         labels={
             "social_spending_pct_gdp": "Social Spending (% GDP)",
@@ -143,6 +148,8 @@ def viz3_scatter_spending_vs_happiness(df: pd.DataFrame) -> go.Figure:
                 line=dict(color="black", dash="dash"),
             )
         )
+    fig.update_xaxes(tickformat=".1f")
+    fig.update_yaxes(tickformat=".1f")
     fig.update_layout(margin=dict(l=20, r=20, t=60, b=20))
     return fig
 
@@ -186,7 +193,7 @@ def viz4_grouped_bar_bli_dimensions(df: pd.DataFrame) -> go.Figure:
         title="VIZ 4 · GROUPED BAR CHART — Wellbeing Dimensions: High vs. Low Spending Countries",
         labels={"score": "OECD Better Life Index Score", "spending_tier": "Spending Tier", "dimension": "Dimension"},
     )
-    fig.update_xaxes(title="OECD Better Life Index Score (0-10)")
+    fig.update_xaxes(title="OECD Better Life Index Score (0-10)", tickformat=".1f")
     fig.update_yaxes(title="Wellbeing Dimension")
     fig.update_layout(margin=dict(l=20, r=20, t=60, b=20))
     return fig
