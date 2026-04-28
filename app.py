@@ -31,15 +31,38 @@ def add_spending_tiers(df: pd.DataFrame) -> pd.DataFrame:
     return out.merge(country_spend[["country_iso3", "spending_tier"]], on="country_iso3", how="left")
 
 
+def add_regions(df: pd.DataFrame) -> pd.DataFrame:
+    out = df.copy()
+    gap = px.data.gapminder()[["iso_alpha", "continent"]].drop_duplicates()
+    gap = gap.rename(columns={"iso_alpha": "country_iso3", "continent": "region"})
+    out = out.merge(gap, on="country_iso3", how="left")
+    out["region"] = out["region"].fillna("Other")
+    return out
+
+
 def choropleth(df: pd.DataFrame, year: int) -> go.Figure:
     d = df[df["year"] == year].copy()
+    d = d.dropna(subset=["happiness_score"])
+    d["happiness_quartile"] = pd.qcut(
+        d["happiness_score"],
+        q=4,
+        labels=["Q1: Lowest", "Q2", "Q3", "Q4: Highest"],
+        duplicates="drop",
+    )
     fig = px.choropleth(
         d,
         locations="country_iso3",
-        color="happiness_score",
+        color="happiness_quartile",
         hover_name="country_name",
-        color_continuous_scale="Blues",
-        title=f"VIZ 1: Happiness Score by Country ({year})",
+        category_orders={"happiness_quartile": ["Q1: Lowest", "Q2", "Q3", "Q4: Highest"]},
+        color_discrete_map={
+            "Q1: Lowest": "#deebf7",
+            "Q2": "#9ecae1",
+            "Q3": "#3182bd",
+            "Q4: Highest": "#08519c",
+        },
+        hover_data={"happiness_score": ":.2f", "happiness_quartile": True},
+        title=f"VIZ 1 · GEOSPATIAL MAP — Happiness Score by Country ({year})",
     )
     fig.update_layout(margin=dict(l=10, r=10, t=50, b=10), height=460)
     return fig
@@ -59,9 +82,11 @@ def timeseries(df: pd.DataFrame) -> go.Figure:
         line_dash="spending_tier",
         line_dash_map={"low": "dot", "medium": "dash", "high": "solid"},
         markers=True,
-        title="VIZ 2: Happiness Trends by Spending Tier (2015-2023)",
-        labels={"happiness_score": "Average Happiness Score", "spending_tier": "Spending Tier"},
+        title="VIZ 2 · TIME SERIES — Happiness Score Trends by Spending Tier (2015-2023)",
+        labels={"happiness_score": "Average Happiness Score", "spending_tier": "Social Spending Tier"},
     )
+    fig.update_xaxes(title="Year")
+    fig.update_yaxes(title="Average Happiness Score")
     fig.update_layout(margin=dict(l=10, r=10, t=50, b=10), height=420)
     return fig
 
@@ -73,7 +98,7 @@ def scatter(df: pd.DataFrame) -> go.Figure:
             social_spending_pct_gdp=("social_spending_pct_gdp", "mean"),
             happiness_score=("happiness_score", "mean"),
             gdp=("gdp_per_capita_ppp_constant_2021_intl_dollars", "mean"),
-            spending_tier=("spending_tier", "first"),
+            region=("region", "first"),
         )
         .dropna(subset=["social_spending_pct_gdp", "happiness_score"])
     )
@@ -81,14 +106,14 @@ def scatter(df: pd.DataFrame) -> go.Figure:
         d,
         x="social_spending_pct_gdp",
         y="happiness_score",
-        color="spending_tier",
+        color="region",
         size="gdp",
         hover_name="country_name",
-        title="VIZ 3: Social Spending (% GDP) vs Happiness Score",
+        title="VIZ 3 · SCATTERPLOT — Social Spending (% GDP) vs. Happiness Score",
         labels={
             "social_spending_pct_gdp": "Social Spending (% GDP)",
             "happiness_score": "Average Happiness Score",
-            "spending_tier": "Spending Tier",
+            "region": "Region",
         },
     )
     x = d["social_spending_pct_gdp"].to_numpy(dtype=float)
@@ -140,9 +165,11 @@ def grouped_bars(df: pd.DataFrame) -> go.Figure:
         color="spending_tier",
         barmode="group",
         orientation="h",
-        title="VIZ 4: Wellbeing Dimensions - High vs Low Spending",
-        labels={"score": "Average BLI Score", "spending_tier": "Spending Tier", "dimension": "Dimension"},
+        title="VIZ 4 · GROUPED BAR CHART — Wellbeing Dimensions: High vs. Low Spending Countries",
+        labels={"score": "OECD Better Life Index Score", "spending_tier": "Spending Tier", "dimension": "Dimension"},
     )
+    fig.update_xaxes(title="OECD Better Life Index Score (0-10)")
+    fig.update_yaxes(title="Wellbeing Dimension")
     fig.update_layout(margin=dict(l=10, r=10, t=50, b=10), height=420)
     return fig
 
@@ -152,7 +179,7 @@ if not DATA_PATH.exists():
         f"Missing combined dataset at {DATA_PATH}. Run scripts/combine_four_datasets.py first."
     )
 
-BASE_DF = add_spending_tiers(pd.read_csv(DATA_PATH))
+BASE_DF = add_regions(add_spending_tiers(pd.read_csv(DATA_PATH)))
 YEARS = sorted([int(y) for y in BASE_DF["year"].dropna().unique()])
 TIER_OPTIONS = ["all", "low", "medium", "high"]
 
