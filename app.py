@@ -68,7 +68,7 @@ def choropleth(df: pd.DataFrame, year: int) -> go.Figure:
     return fig
 
 
-def timeseries(df: pd.DataFrame) -> go.Figure:
+def timeseries(df: pd.DataFrame, selected_country_iso3: str | None = None) -> go.Figure:
     d = df.dropna(subset=["spending_tier"]).copy()
     ts = d.groupby(["year", "spending_tier"], as_index=False, observed=False)["happiness_score"].mean()
     order = ["low", "medium", "high"]
@@ -87,21 +87,59 @@ def timeseries(df: pd.DataFrame) -> go.Figure:
     )
     fig.update_xaxes(title="Year")
     fig.update_yaxes(title="Average Happiness Score", tickformat=".1f")
+
+    # Phase III link: map click adds selected country's trend line.
+    if selected_country_iso3:
+        country_ts = (
+            df[df["country_iso3"] == selected_country_iso3]
+            .dropna(subset=["happiness_score"])
+            .sort_values("year")
+        )
+        if not country_ts.empty:
+            country_name = country_ts["country_name"].iloc[0]
+            fig.add_trace(
+                go.Scatter(
+                    x=country_ts["year"],
+                    y=country_ts["happiness_score"],
+                    mode="lines+markers",
+                    name=f"{country_name} trend",
+                    line=dict(color="black", width=3),
+                    marker=dict(symbol="diamond", size=7),
+                )
+            )
     fig.update_layout(margin=dict(l=10, r=10, t=50, b=10), height=420)
     return fig
 
 
-def scatter(df: pd.DataFrame) -> go.Figure:
-    d = (
+def build_country_level(df: pd.DataFrame) -> pd.DataFrame:
+    dims = [
+        "housing_score",
+        "job_security_score",
+        "health_score",
+        "civic_engagement_score",
+        "safety_score",
+        "work_life_balance_score",
+    ]
+    return (
         df.groupby(["country_iso3", "country_name"], as_index=False)
         .agg(
             social_spending_pct_gdp=("social_spending_pct_gdp", "mean"),
             happiness_score=("happiness_score", "mean"),
             gdp=("gdp_per_capita_ppp_constant_2021_intl_dollars", "mean"),
             region=("region", "first"),
+            spending_tier=("spending_tier", "first"),
+            **{c: (c, "mean") for c in dims},
         )
         .dropna(subset=["social_spending_pct_gdp", "happiness_score"])
     )
+
+
+def scatter(
+    df: pd.DataFrame,
+    selected_country_iso3: str | None = None,
+    hovered_bar_countries: list[str] | None = None,
+) -> go.Figure:
+    d = build_country_level(df).sort_values(["region", "country_name"]).reset_index(drop=True)
     fig = px.scatter(
         d,
         x="social_spending_pct_gdp",
@@ -130,6 +168,38 @@ def scatter(df: pd.DataFrame) -> go.Figure:
         fig.add_trace(
             go.Scatter(x=x_line, y=y_line, mode="lines", name="Trend line", line=dict(color="black", dash="dash"))
         )
+
+    # Phase III link: bar hover highlights corresponding countries in scatter.
+    if hovered_bar_countries:
+        h = d[d["country_iso3"].isin(hovered_bar_countries)]
+        if not h.empty:
+            fig.add_trace(
+                go.Scatter(
+                    x=h["social_spending_pct_gdp"],
+                    y=h["happiness_score"],
+                    mode="markers",
+                    name="Hovered bar countries",
+                    text=h["country_name"],
+                    hoverinfo="text+x+y",
+                    marker=dict(size=14, color="gold", line=dict(color="black", width=1.5), symbol="circle-open"),
+                )
+            )
+
+    # Phase III link: map click highlights selected country in scatter.
+    if selected_country_iso3:
+        sel = d[d["country_iso3"] == selected_country_iso3]
+        if not sel.empty:
+            fig.add_trace(
+                go.Scatter(
+                    x=sel["social_spending_pct_gdp"],
+                    y=sel["happiness_score"],
+                    mode="markers+text",
+                    name="Selected country",
+                    text=sel["country_name"],
+                    textposition="top center",
+                    marker=dict(size=18, color="red", line=dict(color="black", width=1.5), symbol="diamond"),
+                )
+            )
     fig.update_xaxes(tickformat=".1f")
     fig.update_yaxes(tickformat=".1f")
     fig.update_layout(margin=dict(l=10, r=10, t=50, b=10), height=420)
@@ -155,6 +225,7 @@ def grouped_bars(df: pd.DataFrame) -> go.Figure:
         value_name="score",
     )
     grp = melted.groupby(["dimension", "spending_tier"], as_index=False, observed=False)["score"].mean()
+    grp["dimension_code"] = grp["dimension"]
     grp["dimension"] = grp["dimension"].map(
         {
             "housing_score": "Housing",
@@ -170,6 +241,7 @@ def grouped_bars(df: pd.DataFrame) -> go.Figure:
         x="score",
         y="dimension",
         color="spending_tier",
+        custom_data=["dimension_code", "spending_tier"],
         barmode="group",
         orientation="h",
         title="VIZ 4 · GROUPED BAR CHART — Wellbeing Dimensions: High vs. Low Spending Countries",
@@ -201,15 +273,18 @@ app.layout = html.Div(
             [
                 html.Div(
                     [
-                        html.Label("Map Year"),
-                        dcc.Dropdown(
-                            id="year-dropdown",
-                            options=[{"label": str(y), "value": int(y)} for y in YEARS],
+                        html.Label("Year Slider (updates map)"),
+                        dcc.Slider(
+                            id="year-slider",
+                            min=min(YEARS),
+                            max=max(YEARS),
+                            step=1,
+                            marks={y: str(y) for y in YEARS},
                             value=2022 if 2022 in YEARS else YEARS[-1],
-                            clearable=False,
+                            tooltip={"placement": "bottom", "always_visible": False},
                         ),
                     ],
-                    style={"width": "220px"},
+                    style={"width": "460px"},
                 ),
                 html.Div(
                     [
@@ -240,17 +315,39 @@ app.layout = html.Div(
     Output("ts-fig", "figure"),
     Output("scatter-fig", "figure"),
     Output("bar-fig", "figure"),
-    Input("year-dropdown", "value"),
+    Input("year-slider", "value"),
     Input("tier-dropdown", "value"),
+    Input("map-fig", "clickData"),
+    Input("bar-fig", "hoverData"),
 )
-def update_figures(selected_year: int, selected_tier: str):
+def update_figures(selected_year: int, selected_tier: str, map_click_data: dict | None, bar_hover_data: dict | None):
     d = BASE_DF.copy()
     if selected_tier != "all":
         d = d[d["spending_tier"] == selected_tier]
+
+    selected_country_iso3 = None
+    if map_click_data and map_click_data.get("points"):
+        selected_country_iso3 = map_click_data["points"][0].get("location")
+
+    hovered_bar_countries: list[str] = []
+    if bar_hover_data and bar_hover_data.get("points"):
+        pt = bar_hover_data["points"][0]
+        custom = pt.get("customdata") or []
+        if len(custom) >= 2:
+            dimension_code = custom[0]
+            spending_tier = custom[1]
+            if dimension_code in d.columns:
+                cdf = build_country_level(d)
+                cdf = cdf[(cdf["spending_tier"] == spending_tier) & cdf[dimension_code].notna()]
+                hovered_bar_countries = cdf["country_iso3"].dropna().astype(str).tolist()
     return (
         choropleth(d, selected_year),
-        timeseries(d),
-        scatter(d),
+        timeseries(d, selected_country_iso3=selected_country_iso3),
+        scatter(
+            d,
+            selected_country_iso3=selected_country_iso3,
+            hovered_bar_countries=hovered_bar_countries,
+        ),
         grouped_bars(d),
     )
 
