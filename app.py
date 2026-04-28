@@ -11,7 +11,7 @@ import plotly.graph_objects as go
 
 
 REPO_ROOT = Path(__file__).resolve().parent
-DATA_PATH = REPO_ROOT / "data" / "processed" / "combined_wellbeing_policy_2015_2023.csv"
+DATA_PATH = REPO_ROOT / "data" / "cleaned" / "combined_wellbeing_policy_2015_2023_clean.csv"
 
 
 def add_spending_tiers(df: pd.DataFrame) -> pd.DataFrame:
@@ -176,7 +176,7 @@ def grouped_bars(df: pd.DataFrame) -> go.Figure:
 
 if not DATA_PATH.exists():
     raise FileNotFoundError(
-        f"Missing combined dataset at {DATA_PATH}. Run scripts/combine_four_datasets.py first."
+        f"Missing cleaned dataset at {DATA_PATH}. Run scripts/clean_datasets.py first."
     )
 
 BASE_DF = add_regions(add_spending_tiers(pd.read_csv(DATA_PATH)))
