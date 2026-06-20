@@ -304,6 +304,12 @@ app.layout = html.Div(
         dcc.Graph(id="map-fig"),
         dcc.Graph(id="ts-fig"),
         dcc.Graph(id="scatter-fig"),
+        html.P(
+            "Data note (Viz 3): Scatter includes countries with non-missing OECD SOCX ES30 "
+            "(public social expenditure) values. Some countries, including the U.S. for 2015-2023 "
+            "in this extract, may be excluded due to source coverage gaps.",
+            style={"fontSize": "13px", "color": "#555", "marginTop": "-8px", "marginBottom": "10px"},
+        ),
         dcc.Graph(id="bar-fig"),
     ],
     style={"maxWidth": "1300px", "margin": "0 auto", "padding": "16px"},
